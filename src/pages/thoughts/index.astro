@@ -1,5 +1,5 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, render } from "astro:content";
 import Container from "@components/Container.astro";
 import { THOUGHTS } from "@consts";
 import PageLayout from "@layouts/PageLayout.astro";
@@ -14,7 +14,7 @@ const collection = (await getCollection("thoughts"))
 
 const thoughts = await Promise.all(
 	collection.map(async (item: CollectionEntry<"thoughts">, index: number) => {
-		const { Content } = await item.render();
+		const { Content } = await render(item);
 		const thoughtId = collection.length - index;
 		const dateStr = item.data.date.toISOString().split("T")[0];
 		const hours = String(item.data.date.getHours()).padStart(2, "0");

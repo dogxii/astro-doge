@@ -16,20 +16,20 @@ export const GET: APIRoute = async () => {
     ...posts.map((post) => ({
       title: post.data.title,
       description: post.data.description || '',
-      url: `/${post.data.slug || post.slug}`,
+      url: `/${post.data.slug || post.id}`,
       type: 'post' as const,
       date: post.data.date.toLocaleDateString('zh-CN', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       }),
-      content: post.body.slice(0, 500),
+      content: (post.body ?? '').slice(0, 500),
     })),
     ...thoughts.map((thought, index) => {
       const thoughtId = thoughts.length - index
       return {
         title: `碎碎念 #${thoughtId}`,
-        description: thought.body
+        description: (thought.body ?? '')
           .slice(0, 100)
           .replace(/[#*`\n]/g, ' ')
           .trim(),
@@ -40,7 +40,7 @@ export const GET: APIRoute = async () => {
           month: 'short',
           day: 'numeric',
         }),
-        content: thought.body.slice(0, 300),
+        content: (thought.body ?? '').slice(0, 300),
         tags: thought.data.tags || [],
       }
     }),

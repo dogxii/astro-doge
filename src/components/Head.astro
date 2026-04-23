@@ -18,9 +18,13 @@ interface Props {
 	image?: string;
 }
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const siteUrl = import.meta.env.SITE;
+const canonicalURL = siteUrl
+	? new URL(Astro.url.pathname, siteUrl)
+	: Astro.url;
+const generator = "Astro";
 
-const { title, description, image = "/nano.png" } = Astro.props;
+const { title, description, image } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -60,13 +64,13 @@ const { title, description, image = "/nano.png" } = Astro.props;
 <link rel="apple-touch-icon" href="/icons/ios-180.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Astro Doge" />
+<meta name="apple-mobile-web-app-title" content={SITE.NAME} />
 
 <!-- PWA Manifest -->
 <link rel="manifest" href="/manifest.json" />
 
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-<meta name="generator" content={Astro.generator} />
+<meta name="generator" content={generator} />
 
 <!-- Font preloads -->
 <link rel="preload" href={inter400} as="font" type="font/woff2" crossorigin />
@@ -87,14 +91,14 @@ const { title, description, image = "/nano.png" } = Astro.props;
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image, Astro.url)} />
+{image && <meta property="og:image" content={new URL(image, Astro.url)} />}
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:url" content={Astro.url} />
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={new URL(image, Astro.url)} />
+{image && <meta property="twitter:image" content={new URL(image, Astro.url)} />}
 
 <ClientRouter />
 
@@ -103,7 +107,7 @@ const { title, description, image = "/nano.png" } = Astro.props;
   rel="alternate"
   type="application/rss+xml"
   title={SITE.NAME}
-  href={new URL('rss.xml', Astro.site)}
+  href={siteUrl ? new URL('rss.xml', siteUrl) : '/rss.xml'}
 />
 
 <script>

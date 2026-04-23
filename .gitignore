@@ -22,6 +22,3 @@ pnpm-debug.log*
 .DS_Store
 
 .vercel
-
-# lockfiles (let users generate their own)
-bun.lock

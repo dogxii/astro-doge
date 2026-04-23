@@ -1,5 +1,5 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, render } from "astro:content";
 import Comments from "@components/Comments.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
@@ -16,14 +16,16 @@ export async function getStaticPaths() {
 				b.data.date.valueOf() - a.data.date.valueOf(),
 		);
 	return allPosts.map((post: CollectionEntry<"posts">) => ({
-		params: { slug: post.data.slug || post.slug },
+		params: { slug: post.data.slug || post.id },
 		props: post,
 	}));
 }
 type Props = CollectionEntry<"posts">;
 
 const post = Astro.props;
-const { Content } = await post.render();
+const { Content } = await render(post);
+const postPath = post.data.slug || post.id;
+const postBody = post.body ?? "";
 
 // 计算字数
 function countWords(text: string): number {
@@ -38,11 +40,11 @@ function countWords(text: string): number {
 	return chineseChars + englishWords;
 }
 
-const wordCount = countWords(post.body);
+const wordCount = countWords(postBody);
 
 // 获取所有文章并排除当前文章
 const allPosts = (await getCollection("posts")).filter(
-	(p: CollectionEntry<"posts">) => !p.data.draft && p.slug !== post.slug,
+	(p: CollectionEntry<"posts">) => !p.data.draft && p.id !== post.id,
 );
 
 // 随机打乱并取 n 篇
@@ -67,24 +69,36 @@ const articleUrl = Astro.url.href;
 <PageLayout
   title={post.data.title}
   description={post.data.description || post.data.title}
+  image={post.data.cover}
 >
   <TableOfContents />
   <Container>
-    <div class="mb-8 space-y-3">
+    <div class="mb-10 space-y-3">
+      {post.data.cover && (
+        <div class="post-cover animate mb-8 overflow-hidden rounded-xl">
+          <img
+            src={post.data.cover}
+            alt={post.data.title}
+            class="h-auto w-full object-cover"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      )}
       <h1
         class="animate text-2xl leading-tight font-bold text-stone-900 sm:text-3xl lg:text-4xl dark:text-stone-100"
       >
         {post.data.title}
       </h1>
       <div
-        class="animate flex flex-wrap items-center gap-2 text-sm text-stone-500 dark:text-stone-400"
+        class="animate my-4 flex flex-wrap items-center gap-2 text-sm text-stone-500 dark:text-stone-400"
       >
         <span class="font-mono">
           <FormattedDate date={post.data.date} />
         </span>
         <span class="text-stone-300 dark:text-stone-600">·</span>
         <span>
-          {readingTime(post.body)}
+          {readingTime(postBody)}
         </span>
         <div class="hidden sm:inline">
           <span class="text-stone-300 dark:text-stone-600">·</span>
@@ -164,7 +178,7 @@ const articleUrl = Astro.url.href;
             {relatedPosts.map((relatedPost) => (
               <li>
                 <a
-                  href={`/${relatedPost.data.slug || relatedPost.slug}`}
+                  href={`/${relatedPost.data.slug || relatedPost.id}`}
                   class="group flex items-center justify-between gap-4 py-2 transition-colors duration-200"
                 >
                   <span class="text-sm text-stone-500 transition-colors duration-200 group-hover:text-stone-800 dark:text-stone-400 dark:group-hover:text-stone-200">
@@ -184,7 +198,7 @@ const articleUrl = Astro.url.href;
     <!-- 评论区 -->
     <div class="animate mt-10 mb-8 border-t border-stone-200 pt-8 dark:border-stone-800">
       <h3 class="mb-6 text-base font-semibold text-stone-900 dark:text-stone-100">评论</h3>
-      <Comments slug={post.data.slug || post.slug} title={post.data.title} />
+      <Comments slug={postPath} title={post.data.title} />
     </div>
   </Container>
 

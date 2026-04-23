@@ -1,5 +1,5 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, render } from "astro:content";
 import Container from "@components/Container.astro";
 import Link from "@components/Link.astro";
 import { HOME, SITE } from "@consts";
@@ -55,7 +55,7 @@ const thoughts = (await getCollection("thoughts"))
             posts.slice(0, SITE.NUM_POSTS_ON_HOMEPAGE).map((post) => (
               <li>
                 <a
-                  href={`/${post.data.slug || post.slug}`}
+                  href={`/${post.data.slug || post.id}`}
                   class="group -mx-3 block space-y-1.5 rounded-lg p-3 transition-colors duration-200 hover:bg-stone-100/50 dark:hover:bg-stone-800/50"
                 >
                   <div class="flex flex-wrap items-baseline justify-between gap-4">
@@ -63,7 +63,7 @@ const thoughts = (await getCollection("thoughts"))
                       {post.data.title}
                     </h3>
                     <span class="font-mono text-xs whitespace-nowrap text-stone-400 dark:text-stone-500">
-                      {formatDate(post.data.date)} · {readingTime(post.body)}
+                      {formatDate(post.data.date)} · {readingTime(post.body ?? "")}
                     </span>
                   </div>
                   {post.data.description && (
@@ -94,7 +94,7 @@ const thoughts = (await getCollection("thoughts"))
               {thoughts
                 .slice(0, SITE.NUM_THOUGHTS_ON_HOMEPAGE)
                 .map(async (thought, index) => {
-                  const { Content } = await thought.render()
+                  const { Content } = await render(thought)
                   const thoughtId = thoughts.length - index
                   return (
                     <a
