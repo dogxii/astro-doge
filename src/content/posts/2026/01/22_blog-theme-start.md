@@ -159,7 +159,7 @@ tags:
 | `draft` | boolean  | `true` 时不会被构建          |
 | `tags`  | string[] | 可选标签，显示在碎碎念条目中 |
 
-碎碎念页面会自动按时间倒序排列，显示相对时间（如「3 小时前」）、星期、日期和具体时间。每条碎碎念都有锚点编号，点击 `#n` 可以复制直链。
+碎碎念页面会自动按时间倒序排列，按日期轮换圆点和编号颜色，显示相对时间（如「3 小时前」）、星期、日期、标签和可选点赞。每条碎碎念都有锚点编号，点击 `#n` 可以复制直链。
 
 ### 在线发布（/thoughts/new）
 
@@ -186,7 +186,7 @@ tags:
 
 - 每篇文章/页面的评论对应一个 GitHub Issue（以 `slug` 作为标识）
 - 前端通过 `/api/comments` 读取评论，通过 `/api/submit-comment` 提交评论
-- 支持 Gravatar 头像、Markdown 渲染、表情包、剧透语法、嵌套回复
+- 支持头像、Markdown 渲染、表情包、剧透语法、嵌套回复
 
 ### 第一步：创建评论仓库
 
@@ -284,6 +284,10 @@ SITE_TIMEZONE=Asia/Shanghai
 留言板页面位于 `src/pages/messages/index.astro`，本质上是一个固定 `slug` 为 `messages` 的评论区。它复用了评论组件，所以**留言板正常工作的前提是评论系统已经配置好**。
 
 如果你不需要留言板，直接删除 `src/pages/messages/` 目录，并在 `Header.astro` 中移除对应导航链接即可。
+
+## 点赞
+
+碎碎念页已经接入 `/api/likes`。如果你部署到 Vercel 并配置了 `GITHUB_TOKEN` 和 `LIKES_REPO` / `COMMENTS_REPO` / `GITHUB_REPO`，点赞数据会写入 GitHub Issue；如果不配置，页面仍可正常浏览，只是点赞按钮会提示接口尚未配置。
 
 ---
 

@@ -1,19 +1,17 @@
 ---
-import PawLogo from './PawLogo.astro'
+
 ---
 
-<PawLogo />
-
-<!-- 桌面端目录侧边栏 -->
+<!-- 桌面端目录侧边栏 - 右侧，仅在宽屏显示 -->
 <aside
   id="toc-sidebar"
-  class="toc-sidebar fixed left-4 z-40 hidden lg:block xl:left-8"
+  class="toc-sidebar fixed right-4 z-40 hidden xl:right-8 2xl:right-12"
   aria-label="文章目录"
 >
-  <!-- Menu 图标 -->
-  <div class="toc-menu-icon mb-3">
+  <!-- 目录头部 -->
+  <div class="toc-header mb-2 flex items-center gap-2">
     <svg
-      class="menu-icon h-[18px] w-[18px] text-stone-400 transition-colors duration-200 dark:text-stone-600"
+      class="menu-icon h-[15px] w-[15px] text-stone-400 transition-colors duration-200 dark:text-stone-600"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -25,21 +23,36 @@ import PawLogo from './PawLogo.astro'
       <line x1="3" y1="12" x2="15" y2="12"></line>
       <line x1="3" y1="18" x2="9" y2="18"></line>
     </svg>
+    <span
+      class="toc-title text-xs font-medium text-stone-400 opacity-0 transition-opacity duration-200 dark:text-stone-500"
+      >目录</span
+    >
   </div>
 
   <!-- 目录内容 -->
   <nav id="toc-nav" class="toc-nav">
-    <ul class="toc-list space-y-1.5">
+    <!-- 进度条 -->
+    <div
+      class="toc-progress-track absolute top-0 left-0 h-full w-[2px] rounded-full bg-stone-200/60 dark:bg-stone-800/60"
+    >
+      <div
+        id="toc-progress-bar"
+        class="toc-progress-bar w-full rounded-full bg-stone-400 transition-all duration-150 ease-out dark:bg-stone-500"
+        style="height: 0%"
+      >
+      </div>
+    </div>
+    <ul class="toc-list space-y-1 pl-3">
       <!-- 动态生成 -->
     </ul>
   </nav>
 </aside>
 
-<!-- 移动端浮动目录按钮 -->
+<!-- 移动端浮动目录按钮（xl 以下可见） -->
 <button
   type="button"
   id="toc-mobile-toggle"
-  class="toc-mobile-btn fixed right-4 bottom-24 z-50 hidden items-center justify-center sm:bottom-20 lg:hidden"
+  class="toc-mobile-btn fixed right-4 bottom-10 z-50 hidden items-center justify-center sm:bottom-32 xl:hidden"
   aria-label="打开目录"
 >
   <svg
@@ -60,7 +73,7 @@ import PawLogo from './PawLogo.astro'
 <!-- 移动端目录抽屉 -->
 <div
   id="toc-mobile-drawer"
-  class="fixed inset-0 z-[100] hidden lg:hidden"
+  class="fixed inset-0 z-[100] hidden xl:hidden"
   role="dialog"
   aria-modal="true"
   aria-label="文章目录"
@@ -155,6 +168,8 @@ import PawLogo from './PawLogo.astro'
     const sidebar = document.getElementById('toc-sidebar')
     const tocNav = document.getElementById('toc-nav')
     const menuIcon = sidebar?.querySelector('.menu-icon')
+    const tocTitle = sidebar?.querySelector('.toc-title')
+    const progressBar = document.getElementById('toc-progress-bar')
     const article = document.querySelector('article.post-content')
 
     const mobileToggle = document.getElementById('toc-mobile-toggle')
@@ -175,7 +190,6 @@ import PawLogo from './PawLogo.astro'
       return
     }
 
-    // 获取所有标题
     const headings = article.querySelectorAll('h1, h2, h3, h4, h5, h6')
     if (headings.length === 0) {
       if (sidebar) sidebar.style.display = 'none'
@@ -183,31 +197,51 @@ import PawLogo from './PawLogo.astro'
       return
     }
 
-    // 显示移动端按钮（仅在非桌面端）
-    if (mobileToggle && window.innerWidth < 1024) {
+    if (mobileToggle && window.innerWidth < 1280) {
       mobileToggle.style.display = 'flex'
     }
 
-    // 更新移动端标题计数
     if (mobileHeadingCount) {
       mobileHeadingCount.textContent = `${headings.length} 节`
     }
 
-    // 计算目录位置
     const updateTocPosition = () => {
       if (!sidebar) return
       const width = window.innerWidth
-      if (width >= 1280) {
-        sidebar.style.top = '5.5rem'
-      } else if (width >= 1024) {
-        sidebar.style.top = '2rem'
+
+      if (width < 1280) {
+        sidebar.style.display = 'none'
+        return
       }
+
+      const container = article.closest('.mx-auto')
+      if (!container) return
+
+      const containerRect = container.getBoundingClientRect()
+      const rightSpace = width - containerRect.right
+
+      if (rightSpace > 160) {
+        sidebar.style.display = 'block'
+        sidebar.style.left = `${containerRect.right + 32}px`
+        sidebar.style.right = 'auto'
+        sidebar.style.maxWidth = `${Math.min(rightSpace - 48, 200)}px`
+      } else {
+        sidebar.style.display = 'none'
+        return
+      }
+
+      sidebar.style.top = '5.5rem'
     }
 
     updateTocPosition()
     window.addEventListener('resize', updateTocPosition)
 
-    // 生成目录
+    let minLevel = 6
+    headings.forEach((heading) => {
+      const level = parseInt(heading.tagName.charAt(1))
+      if (level < minLevel) minLevel = level
+    })
+
     const generateTOC = (container: Element, isMobile = false) => {
       const listClass = isMobile ? '.toc-mobile-list' : '.toc-list'
       const list = container.querySelector(listClass)
@@ -233,12 +267,13 @@ import PawLogo from './PawLogo.astro'
         a.href = `#${id}`
         a.className = isMobile
           ? 'toc-mobile-link block rounded-lg px-3 py-2 text-sm text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800'
-          : 'toc-link block py-0.5 text-xs text-stone-400 transition-colors duration-200 hover:text-stone-700 dark:text-stone-600 dark:hover:text-stone-300'
+          : 'toc-link block truncate py-[3px] text-[11px] leading-snug text-stone-400 transition-all duration-200 hover:text-stone-700 dark:text-stone-600 dark:hover:text-stone-300'
         a.textContent = text
         a.dataset.headingId = id
+        a.title = text
 
-        // 根据层级添加缩进
-        const indent = (level - 1) * (isMobile ? 12 : 8)
+        const relativeLevel = level - minLevel
+        const indent = relativeLevel * (isMobile ? 12 : 10)
         a.style.paddingLeft = isMobile ? `${12 + indent}px` : `${indent}px`
 
         li.appendChild(a)
@@ -249,24 +284,33 @@ import PawLogo from './PawLogo.astro'
     if (tocNav) generateTOC(tocNav)
     if (mobileNav) generateTOC(mobileNav, true)
 
-    // 高亮当前标题
     let activeLink: Element | null = null
     let activeMobileLink: Element | null = null
 
     const updateActiveHeading = () => {
       let currentHeading: Element | null = null
+      let currentIndex = -1
 
-      headings.forEach((heading) => {
+      headings.forEach((heading, index) => {
         const rect = heading.getBoundingClientRect()
         if (rect.top <= 150) {
           currentHeading = heading
+          currentIndex = index
         }
       })
+
+      if (progressBar) {
+        if (currentIndex >= 0) {
+          const progress = ((currentIndex + 1) / headings.length) * 100
+          progressBar.style.height = `${Math.min(progress, 100)}%`
+        } else {
+          progressBar.style.height = '0%'
+        }
+      }
 
       if (currentHeading) {
         const id = (currentHeading as HTMLElement).id
 
-        // 桌面端
         if (tocNav) {
           const newActiveLink = tocNav.querySelector(
             `a[data-heading-id="${id}"]`,
@@ -275,25 +319,41 @@ import PawLogo from './PawLogo.astro'
             if (activeLink) {
               activeLink.classList.remove(
                 'toc-active',
-                'text-stone-700',
-                'dark:text-stone-300',
+                'text-stone-800',
+                'dark:text-stone-200',
+                'font-medium',
               )
               activeLink.classList.add('text-stone-400', 'dark:text-stone-600')
             }
             newActiveLink.classList.add(
               'toc-active',
-              'text-stone-700',
-              'dark:text-stone-300',
+              'text-stone-800',
+              'dark:text-stone-200',
+              'font-medium',
             )
             newActiveLink.classList.remove(
               'text-stone-400',
               'dark:text-stone-600',
             )
             activeLink = newActiveLink
+
+            const navEl = tocNav as HTMLElement
+            const linkEl = newActiveLink as HTMLElement
+            const navRect = navEl.getBoundingClientRect()
+            const linkRect = linkEl.getBoundingClientRect()
+
+            if (
+              linkRect.top < navRect.top + 20 ||
+              linkRect.bottom > navRect.bottom - 20
+            ) {
+              linkEl.scrollIntoView({
+                block: 'center',
+                behavior: 'smooth',
+              })
+            }
           }
         }
 
-        // 移动端
         if (mobileNav) {
           const newMobileLink = mobileNav.querySelector(
             `a[data-heading-id="${id}"]`,
@@ -309,7 +369,6 @@ import PawLogo from './PawLogo.astro'
       }
     }
 
-    // 节流滚动事件
     let ticking = false
     window.addEventListener(
       'scroll',
@@ -325,14 +384,11 @@ import PawLogo from './PawLogo.astro'
       { passive: true },
     )
 
-    // 初始化高亮
     updateActiveHeading()
 
-    // 滚动到指定标题
     const scrollToHeading = (headingId: string) => {
       const heading = document.getElementById(headingId)
       if (heading) {
-        // 计算目标位置，考虑顶部偏移
         const headerOffset = 80
         const elementPosition = heading.getBoundingClientRect().top
         const offsetPosition =
@@ -345,7 +401,6 @@ import PawLogo from './PawLogo.astro'
       }
     }
 
-    // 桌面端目录点击
     const handleDesktopTOCClick = (e: Event) => {
       const target = e.target as HTMLElement
       if (target.classList.contains('toc-link')) {
@@ -358,7 +413,8 @@ import PawLogo from './PawLogo.astro'
       }
     }
 
-    // 移动端目录点击
+    let pendingScrollId: string | null = null
+
     const handleMobileTOCClick = (e: Event) => {
       const target = e.target as HTMLElement
       if (target.classList.contains('toc-mobile-link')) {
@@ -366,12 +422,8 @@ import PawLogo from './PawLogo.astro'
         e.stopPropagation()
         const id = target.dataset.headingId
         if (id) {
-          // 先关闭抽屉，恢复页面滚动能力
+          pendingScrollId = id
           closeMobileDrawer()
-          // 等待抽屉关闭动画和 overflow 恢复后再滚动
-          setTimeout(() => {
-            scrollToHeading(id)
-          }, 350)
         }
       }
     }
@@ -379,31 +431,21 @@ import PawLogo from './PawLogo.astro'
     if (tocNav) tocNav.addEventListener('click', handleDesktopTOCClick)
     if (mobileNav) mobileNav.addEventListener('click', handleMobileTOCClick)
 
-    // 回到顶部
+    let pendingScrollTop = false
+
     if (scrollTopBtn) {
       scrollTopBtn.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
+        pendingScrollTop = true
         closeMobileDrawer()
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }, 350)
       })
     }
 
-    // 移动端抽屉控制
-    let savedScrollPosition = 0
-
     const openMobileDrawer = () => {
       if (!mobileDrawer) return
-      // 保存当前滚动位置
-      savedScrollPosition = window.scrollY
       mobileDrawer.classList.remove('hidden')
-      // 使用 fixed 定位 body 来防止滚动，同时保持视觉位置
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${savedScrollPosition}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
+      document.documentElement.style.overflow = 'hidden'
       document.body.style.overflow = 'hidden'
       requestAnimationFrame(() => {
         mobileBackdrop?.classList.add('opacity-100')
@@ -419,16 +461,25 @@ import PawLogo from './PawLogo.astro'
       mobileBackdrop?.classList.add('opacity-0')
       mobileContent?.classList.add('translate-y-full')
       mobileContent?.classList.remove('translate-y-0')
-      // 恢复 body 样式
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.left = ''
-      document.body.style.right = ''
-      document.body.style.overflow = ''
-      // 恢复滚动位置
-      window.scrollTo(0, savedScrollPosition)
+
       setTimeout(() => {
         mobileDrawer.classList.add('hidden')
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+
+        if (pendingScrollId) {
+          const id = pendingScrollId
+          pendingScrollId = null
+          requestAnimationFrame(() => {
+            scrollToHeading(id)
+          })
+        }
+        if (pendingScrollTop) {
+          pendingScrollTop = false
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          })
+        }
       }, 300)
     }
 
@@ -454,71 +505,32 @@ import PawLogo from './PawLogo.astro'
       })
     }
 
-    // 桌面端悬停显示目录
-    let isArticleHovered = false
-    let tocHideTimer: ReturnType<typeof setTimeout> | null = null
+    if (sidebar && window.innerWidth >= 1280) {
+      sidebar.classList.add('toc-visible')
 
-    const showTOC = () => {
-      if (window.innerWidth >= 1024 && sidebar) {
-        if (tocHideTimer) {
-          clearTimeout(tocHideTimer)
-          tocHideTimer = null
-        }
-        sidebar.classList.add('toc-visible')
+      sidebar.addEventListener('mouseenter', () => {
+        sidebar.classList.add('toc-hovered')
         menuIcon?.classList.add('menu-active')
-      }
-    }
+        tocTitle?.classList.add('opacity-100')
+        tocTitle?.classList.remove('opacity-0')
+      })
 
-    const hideTOC = () => {
-      if (tocHideTimer) {
-        clearTimeout(tocHideTimer)
-      }
-      tocHideTimer = setTimeout(() => {
-        sidebar?.classList.remove('toc-visible')
+      sidebar.addEventListener('mouseleave', () => {
+        sidebar.classList.remove('toc-hovered')
         menuIcon?.classList.remove('menu-active')
-      }, 200)
-    }
-
-    if (article && window.innerWidth >= 1024) {
-      article.addEventListener('mouseenter', () => {
-        isArticleHovered = true
-        showTOC()
-      })
-
-      article.addEventListener('mouseleave', () => {
-        isArticleHovered = false
-        if (!sidebar?.matches(':hover')) {
-          hideTOC()
-        }
-      })
-
-      sidebar?.addEventListener('mouseenter', () => {
-        if (tocHideTimer) {
-          clearTimeout(tocHideTimer)
-          tocHideTimer = null
-        }
-        sidebar.classList.add('toc-visible')
-        menuIcon?.classList.add('menu-active')
-      })
-
-      sidebar?.addEventListener('mouseleave', () => {
-        if (!isArticleHovered) {
-          hideTOC()
-        }
+        tocTitle?.classList.remove('opacity-100')
+        tocTitle?.classList.add('opacity-0')
       })
     }
 
-    // 响应式处理
     const handleResize = () => {
       const width = window.innerWidth
-      if (width >= 1024) {
+      if (width >= 1280) {
         closeMobileDrawer()
-        // 桌面端隐藏移动端按钮
         if (mobileToggle) {
           mobileToggle.style.display = 'none'
         }
       } else {
-        // 非桌面端显示移动端按钮
         if (mobileToggle) {
           mobileToggle.style.display = 'flex'
         }
@@ -529,7 +541,6 @@ import PawLogo from './PawLogo.astro'
     window.addEventListener('resize', handleResize)
   }
 
-  // 初始化
   document.addEventListener('DOMContentLoaded', setupTableOfContents)
   document.addEventListener('astro:after-swap', setupTableOfContents)
 
@@ -539,25 +550,38 @@ import PawLogo from './PawLogo.astro'
 </script>
 
 <style>
-  /* 桌面端目录样式 */
   .toc-sidebar {
     max-width: 200px;
     opacity: 1;
   }
 
   .toc-nav {
+    position: relative;
     max-height: calc(100vh - 10rem);
     overflow-y: auto;
-    opacity: 0;
-    transform: translateX(-8px);
-    transition:
-      opacity 0.2s ease,
-      transform 0.2s ease;
+    overflow-x: hidden;
+    opacity: 0.45;
+    transition: opacity 0.3s ease;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .toc-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .toc-sidebar.toc-visible .toc-nav {
+    opacity: 0.45;
+  }
+
+  .toc-sidebar.toc-hovered .toc-nav {
     opacity: 1;
-    transform: translateX(0);
+  }
+
+  .toc-progress-track {
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 
   .menu-icon {
@@ -565,11 +589,11 @@ import PawLogo from './PawLogo.astro'
   }
 
   .menu-icon.menu-active {
-    color: rgb(87 83 78); /* stone-600 */
+    color: rgb(87 83 78);
   }
 
   :global(.dark) .menu-icon.menu-active {
-    color: rgb(168 162 158); /* stone-400 */
+    color: rgb(168 162 158);
   }
 
   .toc-link {
@@ -580,13 +604,11 @@ import PawLogo from './PawLogo.astro'
     font-weight: 500;
   }
 
-  /* 移动端按钮 */
   .toc-mobile-btn {
     width: 44px;
     height: 44px;
     border-radius: 50%;
     background: white;
-    border: 1px solid rgb(231 229 228);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: rgb(120 113 108);
   }
@@ -600,7 +622,6 @@ import PawLogo from './PawLogo.astro'
 
   :global(.dark) .toc-mobile-btn {
     background: rgb(28 25 23);
-    border-color: rgb(68 64 60);
     color: rgb(168 162 158);
   }
 
@@ -614,7 +635,6 @@ import PawLogo from './PawLogo.astro'
     border-color: rgb(87 83 78);
   }
 
-  /* 移动端目录样式 */
   .toc-mobile-link.toc-mobile-active {
     background: rgb(245 245 244);
     color: rgb(28 25 23);

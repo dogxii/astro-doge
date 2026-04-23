@@ -146,3 +146,22 @@ export function getWeekday(date: Date): string {
   const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
   return weekdays[date.getDay()]
 }
+
+/**
+ * 格式化碎碎念时间
+ * - 同年：MM-DD HH:mm
+ * - 跨年：YYYY-MM-DD HH:mm
+ */
+export function formatThoughtDate(date: Date): string {
+  const now = new Date()
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  const month = pad2(date.getMonth() + 1)
+  const day = pad2(date.getDate())
+  const hour = pad2(date.getHours())
+  const minute = pad2(date.getMinutes())
+  const time = `${hour}:${minute}`
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${month}-${day} ${time}`
+  }
+  return `${date.getFullYear()}-${month}-${day} ${time}`
+}

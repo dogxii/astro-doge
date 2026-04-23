@@ -3,7 +3,7 @@ import { type CollectionEntry, getCollection, render } from 'astro:content'
 import Container from '@components/Container.astro'
 import { THOUGHTS } from '@consts'
 import PageLayout from '@layouts/PageLayout.astro'
-import { getWeekday, timeAgo } from '@lib/utils'
+import { formatThoughtDate, getWeekday, timeAgo } from '@lib/utils'
 
 const collection = (await getCollection('thoughts'))
   .filter((thought: CollectionEntry<'thoughts'>) => !thought.data.draft)
@@ -17,12 +17,69 @@ const thoughts = await Promise.all(
     const { Content } = await render(item)
     const thoughtId = collection.length - index
     const dateStr = item.data.date.toISOString().split('T')[0]
-    const hours = String(item.data.date.getHours()).padStart(2, '0')
-    const minutes = String(item.data.date.getMinutes()).padStart(2, '0')
-    const timeStr = `${hours}:${minutes}`
-    return { ...item, Content, thoughtId, dateStr, timeStr }
+    return { ...item, Content, thoughtId, dateStr }
   }),
 )
+
+const colors = [
+  {
+    bg: 'bg-rose-300',
+    light: 'border-rose-300',
+    dark: 'dark:border-rose-500/40',
+    text: 'text-rose-500',
+  },
+  {
+    bg: 'bg-orange-300',
+    light: 'border-orange-300',
+    dark: 'dark:border-orange-500/40',
+    text: 'text-orange-500',
+  },
+  {
+    bg: 'bg-amber-300',
+    light: 'border-amber-300',
+    dark: 'dark:border-amber-500/40',
+    text: 'text-amber-500',
+  },
+  {
+    bg: 'bg-sky-300',
+    light: 'border-sky-300',
+    dark: 'dark:border-sky-500/40',
+    text: 'text-sky-500',
+  },
+  {
+    bg: 'bg-indigo-300',
+    light: 'border-indigo-300',
+    dark: 'dark:border-indigo-500/40',
+    text: 'text-indigo-500',
+  },
+  {
+    bg: 'bg-purple-300',
+    light: 'border-purple-300',
+    dark: 'dark:border-purple-500/40',
+    text: 'text-purple-500',
+  },
+  {
+    bg: 'bg-fuchsia-300',
+    light: 'border-fuchsia-300',
+    dark: 'dark:border-fuchsia-500/40',
+    text: 'text-fuchsia-500',
+  },
+  {
+    bg: 'bg-pink-300',
+    light: 'border-pink-300',
+    dark: 'dark:border-pink-500/40',
+    text: 'text-pink-500',
+  },
+]
+
+const dateColorMap = new Map<string, number>()
+let colorIndex = 0
+thoughts.forEach((thought) => {
+  if (!dateColorMap.has(thought.dateStr)) {
+    dateColorMap.set(thought.dateStr, colorIndex % colors.length)
+    colorIndex++
+  }
+})
 ---
 
 <PageLayout title={THOUGHTS.TITLE} description={THOUGHTS.DESCRIPTION}>
@@ -39,16 +96,18 @@ const thoughts = await Promise.all(
       <ul class="flex flex-col space-y-0">
         {
           thoughts.map((entry) => {
+            const colorIdx = dateColorMap.get(entry.dateStr) || 0
+            const color = colors[colorIdx]
             return (
               <li
                 id={`${entry.thoughtId}`}
-                class="animate group scroll-mt-20 border-stone-200 dark:border-stone-800"
+                class={`animate scroll-mt-20 ${color.light} ${color.dark} group`}
               >
                 <div class="flex flex-wrap items-center gap-1.5 py-1.5 text-xs font-medium sm:gap-2">
-                  <div class="h-2 w-2 rounded-full bg-stone-400 shadow-sm dark:bg-stone-500" />
+                  <div class={`h-2 w-2 ${color.bg} rounded-full shadow-sm`} />
                   <a
                     href={`#${entry.thoughtId}`}
-                    class="thought-anchor cursor-pointer font-semibold text-stone-500 transition-opacity hover:opacity-70 dark:text-stone-400"
+                    class={`thought-anchor cursor-pointer ${color.text} font-semibold transition-opacity hover:opacity-70`}
                     data-thought-id={entry.thoughtId}
                     title="复制链接"
                   >
@@ -56,6 +115,7 @@ const thoughts = await Promise.all(
                   </a>
                   <span class="text-stone-300 dark:text-stone-600">·</span>
                   <span class="text-stone-500 dark:text-stone-400">
+                    发布于
                     <span
                       class="time-ago"
                       data-timestamp={entry.data.date.getTime()}
@@ -63,22 +123,16 @@ const thoughts = await Promise.all(
                       {timeAgo(entry.data.date)}
                     </span>
                   </span>
-                  <span class="hidden text-stone-300 sm:inline dark:text-stone-600">
-                    ·
+                  <span class="text-stone-300 dark:text-stone-600">·</span>
+                  <span class="font-mono text-stone-500 dark:text-stone-400">
+                    {formatThoughtDate(entry.data.date)}
                   </span>
                   <span class="hidden text-stone-500 sm:inline dark:text-stone-400">
                     {getWeekday(entry.data.date)}
                   </span>
-                  <span class="text-stone-300 dark:text-stone-600">·</span>
-                  <span class="font-mono text-stone-500 dark:text-stone-400">
-                    {entry.dateStr}
-                    <span class="ml-1 text-stone-400 dark:text-stone-500">
-                      {entry.timeStr}
-                    </span>
-                  </span>
                   <span class="ml-auto flex items-center gap-1.5 sm:gap-2">
                     {entry.data.tags && entry.data.tags.length > 0 && (
-                      <span class="hidden items-center gap-1.5 sm:flex sm:gap-2">
+                      <span class="thought-tags-wrapper hidden items-center gap-1.5 sm:flex sm:gap-2">
                         <span class="text-stone-300 dark:text-stone-600">
                           ·
                         </span>
@@ -135,7 +189,7 @@ const thoughts = await Promise.all(
                     </span>
                   </span>
                 </div>
-                <div class="mb-4 ml-0.5 border-b border-stone-200 py-3 sm:mb-0 sm:border-b-0 sm:border-l-2 sm:border-stone-300 sm:pl-6 dark:border-stone-800 sm:dark:border-stone-700">
+                <div class="mb-4 ml-0.5 border-b border-stone-200 py-3 sm:mb-0 sm:border-b-0 sm:border-l-2 sm:pl-6 dark:border-stone-800">
                   <article class="prose-p:my-4! text-sm! font-medium [&_img]:my-2 [&_img]:mr-auto [&_img]:ml-0! [&_img]:h-auto [&_img]:w-auto [&_img]:max-w-60 [&_img]:object-contain sm:[&_img]:max-w-xs">
                     <entry.Content />
                   </article>

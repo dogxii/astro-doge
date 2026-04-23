@@ -22,7 +22,7 @@
   "comments": [
     {
       "id": 101,
-      "name": "Dogxi",
+      "name": "Site Owner",
       "avatar": "https://weavatar.com/avatar/xxx?s=80&d=identicon",
       "website": "https://example.com",
       "content": "这是一条评论",
@@ -38,7 +38,7 @@
           "createdAt": "2026-04-23T09:10:00.000Z",
           "replyTo": {
             "id": 101,
-            "name": "Dogxi"
+            "name": "Site Owner"
           }
         }
       ]
@@ -64,7 +64,7 @@
 {
   "slug": "my-first-post",
   "title": "我的第一篇文章",
-  "name": "Dogxi",
+  "name": "Site Owner",
   "email": "hi@example.com",
   "website": "https://example.com",
   "content": "你好，这里是评论内容",

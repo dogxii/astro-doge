@@ -1,6 +1,6 @@
 ---
 // 自定义评论组件
-// 使用 GitHub Issues 存储，支持 Gravatar 头像、表情、Markdown 和剧透语法
+// 使用 GitHub Issues 存储，支持头像、表情、Markdown 和剧透语法
 // 现代化卡片式设计
 
 interface Props {
@@ -548,7 +548,7 @@ const publicOwnerEmail = import.meta.env.PUBLIC_OWNER_EMAIL || ''
     return html
   }
 
-  // MD5 实现（简化版，用于 Gravatar）
+  // MD5 实现（用于头像服务）
   function md5(string: string): string {
     function rotateLeft(value: number, shift: number): number {
       return (value << shift) | (value >>> (32 - shift))
